@@ -349,45 +349,57 @@ fun RequestCard(
 
                 Spacer(Modifier.width(12.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text(
                             request.personName,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = TextPrimary
+                            fontSize = 15.sp,
+                            color = TextPrimary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         if (request.shiur.isNotEmpty()) {
-                            Spacer(Modifier.width(6.dp))
+                            Spacer(Modifier.width(5.dp))
                             Surface(
                                 color = Indigo50,
                                 shape = RoundedCornerShape(6.dp)
                             ) {
                                 Text(
                                     request.shiur,
-                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    fontSize = 10.sp,
                                     color = Indigo600,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
                     }
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             dateFormat.format(Date(request.createdAt)),
-                            fontSize = 11.sp,
-                            color = TextTertiary
+                            fontSize = 10.sp,
+                            color = TextTertiary,
+                            maxLines = 1
                         )
                         if (request.phone.isNotEmpty()) {
-                            Text("·", fontSize = 11.sp, color = TextTertiary)
+                            Text("·", fontSize = 10.sp, color = TextTertiary)
                             Text(
                                 request.phone,
-                                fontSize = 11.sp,
-                                color = Indigo600
+                                fontSize = 10.sp,
+                                color = Indigo600,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
