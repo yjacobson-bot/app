@@ -19,12 +19,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses || true
-
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
@@ -40,6 +34,8 @@ jobs:
 
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -56,9 +52,12 @@ jobs:
           name: "עוזר לי v1.0.${{ github.run_number }}"
           body: |
             ## עוזר לי 🤝
-            אפליקציה לניהול בקשות עזרה
-            ### הורדה
-            הורד את קובץ ה-APK מהמצורפים למטה והתקן על האנדרואיד שלך
+            אפליקציה לניהול בקשות עזרה - 100% אופליין
+
+            ### התקנה
+            1. הורד את קובץ ה-APK
+            2. אפשר התקנה ממקורות לא ידועים בהגדרות
+            3. פתח את הקובץ והתקן
           files: app/build/outputs/apk/release/*.apk
           draft: false
           prerelease: false
