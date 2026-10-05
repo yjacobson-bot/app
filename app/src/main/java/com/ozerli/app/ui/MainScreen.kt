@@ -357,7 +357,7 @@ fun RequestCard(
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        Icons.Outlined.Delete,
+                        Icons.Default.Delete,
                         contentDescription = "מחק",
                         tint = TextTertiary,
                         modifier = Modifier.size(20.dp)
