@@ -20,11 +20,21 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Setup Android SDK components
+        run: |
+          echo "y" | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "platform-tools" 2>/dev/null || true
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Build Release APK
         run: ./gradlew assembleRelease --no-daemon --stacktrace
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -42,18 +52,19 @@ jobs:
           body: |
             ## עוזר לי 🤝 — מנהל בקשות עזרה אישי
 
-            אפליקציה אופליין לניהול כל מי שפנה אליך לעזרה.
+            אפליקציה מודרנית ו-100% אופליין לניהול כל מי שפנה אליך לעזרה.
 
             ### ✨ פיצ'רים
-            - רשימת בקשות פתוחות עם דחיפות (אדום / צהוב / ירוק)
-            - שדה שיעור אופציונלי לכל בקשה
-            - תזכורות חכמות
-            - היסטוריה וסטטיסטיקות
+            - ✅ רשימת בקשות עם דרגות דחיפות
+            - 📋 שדה שיעור אופציונלי
+            - 🔔 תזכורות חכמות
+            - 📊 סטטיסטיקות ודירוג פונים
+            - 🕓 היסטוריה מלאה
 
             ### 📲 התקנה
-            1. הורד את ה-APK למטה
-            2. הגדרות ← אפליקציות ← מקורות לא ידועים ← אפשר
-            3. פתח את הקובץ ← התקן
+            1. הורד את ה-APK
+            2. הגדרות ← אפליקציות ← מקורות לא ידועים
+            3. פתח והתקן
 
           files: app/build/outputs/apk/release/*.apk
         env:

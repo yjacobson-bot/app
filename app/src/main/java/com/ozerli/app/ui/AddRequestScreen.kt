@@ -1,11 +1,9 @@
 package com.ozerli.app.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -14,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -30,11 +27,11 @@ fun AddRequestScreen(
     viewModel: RequestViewModel,
     onBack: () -> Unit
 ) {
-    var personName  by remember { mutableStateOf("") }
-    var shiur       by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var urgency     by remember { mutableStateOf(Urgency.YELLOW) }
-    var hasReminder by remember { mutableStateOf(false) }
+    var personName   by remember { mutableStateOf("") }
+    var shiur        by remember { mutableStateOf("") }
+    var description  by remember { mutableStateOf("") }
+    var urgency      by remember { mutableStateOf(Urgency.YELLOW) }
+    var hasReminder  by remember { mutableStateOf(false) }
     var reminderDays by remember { mutableStateOf("2") }
 
     var nameError by remember { mutableStateOf(false) }
@@ -56,17 +53,13 @@ fun AddRequestScreen(
         containerColor = Surface,
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text("בקשה חדשה", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                },
+                title = { Text("בקשה חדשה", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.Close, contentDescription = "סגור")
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = CardWhite
-                )
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = CardWhite)
             )
         }
     ) { padding ->
@@ -80,7 +73,7 @@ fun AddRequestScreen(
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
 
-                // ── Name ──────────────────────────────────────────────────
+                // ── Name ─────────────────────────────────────────────────
                 SectionLabel("שם האדם")
                 OutlinedTextField(
                     value = personName,
@@ -91,7 +84,7 @@ fun AddRequestScreen(
                     supportingText = if (nameError) ({ Text("שדה חובה") }) else null,
                     shape = RoundedCornerShape(14.dp),
                     singleLine = true,
-                    colors = outlinedTextFieldColors()
+                    colors = fieldColors()
                 )
 
                 // ── Shiur ─────────────────────────────────────────────────
@@ -103,7 +96,7 @@ fun AddRequestScreen(
                     placeholder = { Text("א', ב', ג'...") },
                     shape = RoundedCornerShape(14.dp),
                     singleLine = true,
-                    colors = outlinedTextFieldColors()
+                    colors = fieldColors()
                 )
 
                 // ── Description ───────────────────────────────────────────
@@ -118,7 +111,7 @@ fun AddRequestScreen(
                     shape = RoundedCornerShape(14.dp),
                     minLines = 3,
                     maxLines = 6,
-                    colors = outlinedTextFieldColors()
+                    colors = fieldColors()
                 )
 
                 // ── Urgency ───────────────────────────────────────────────
@@ -128,29 +121,23 @@ fun AddRequestScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     UrgencyOption(
-                        label = "דחוף",
-                        emoji = "🔴",
+                        label = "דחוף", emoji = "🔴",
                         selected = urgency == Urgency.RED,
-                        color = RedStrong,
-                        bgColor = RedLight,
+                        color = RedStrong, bgColor = RedLight,
                         modifier = Modifier.weight(1f),
                         onClick = { urgency = Urgency.RED }
                     )
                     UrgencyOption(
-                        label = "בינוני",
-                        emoji = "🟡",
+                        label = "בינוני", emoji = "🟡",
                         selected = urgency == Urgency.YELLOW,
-                        color = AmberStrong,
-                        bgColor = AmberLight,
+                        color = AmberStrong, bgColor = AmberLight,
                         modifier = Modifier.weight(1f),
                         onClick = { urgency = Urgency.YELLOW }
                     )
                     UrgencyOption(
-                        label = "רגיל",
-                        emoji = "🟢",
+                        label = "רגיל", emoji = "🟢",
                         selected = urgency == Urgency.GREEN,
-                        color = GreenStrong,
-                        bgColor = GreenLight,
+                        color = GreenStrong, bgColor = GreenLight,
                         modifier = Modifier.weight(1f),
                         onClick = { urgency = Urgency.GREEN }
                     )
@@ -173,13 +160,20 @@ fun AddRequestScreen(
                                 Spacer(Modifier.width(8.dp))
                                 Column {
                                     Text("תזכורת", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                                    Text("הזכר לי לחזור לענין הזה", fontSize = 12.sp, color = TextSecondary)
+                                    Text(
+                                        "הזכר לי לחזור לענין הזה",
+                                        fontSize = 12.sp,
+                                        color = TextSecondary
+                                    )
                                 }
                             }
                             Switch(
                                 checked = hasReminder,
                                 onCheckedChange = { hasReminder = it },
-                                colors = SwitchDefaults.colors(checkedThumbColor = Indigo600, checkedTrackColor = Indigo100)
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Indigo600,
+                                    checkedTrackColor = Indigo100
+                                )
                             )
                         }
                         if (hasReminder) {
@@ -197,7 +191,7 @@ fun AddRequestScreen(
                                     modifier = Modifier.width(72.dp),
                                     singleLine = true,
                                     shape = RoundedCornerShape(10.dp),
-                                    colors = outlinedTextFieldColors()
+                                    colors = fieldColors()
                                 )
                                 Text("ימים", color = TextSecondary, fontSize = 14.sp)
                             }
@@ -270,11 +264,8 @@ private fun UrgencyOption(
 }
 
 @Composable
-private fun outlinedTextFieldColors() = OutlinedTextFieldDefaults.colors(
+private fun fieldColors() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor   = Indigo500,
     unfocusedBorderColor = Divider,
     focusedLabelColor    = Indigo500
 )
-
-private fun BorderStroke(width: androidx.compose.ui.unit.Dp, color: Color) =
-    androidx.compose.foundation.BorderStroke(width, color)
