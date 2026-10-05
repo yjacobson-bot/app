@@ -38,17 +38,19 @@ jobs:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
         continue-on-error: true
 
-      - name: Surface Kotlin errors as annotations
+      - name: Post errors as commit comment
         if: steps.build.outcome == 'failure'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "=== KOTLIN ERRORS ==="
-          grep -E "error:|FAILED|Exception in thread|Caused by:" build.log | head -40 || true
-          echo "=== LAST 80 LINES OF BUILD LOG ==="
-          tail -80 build.log || true
-          # Also emit as GitHub annotations
-          grep -oP "(?<=error: ).*" build.log | head -20 | while IFS= read -r msg; do
-            echo "::error::$msg"
-          done
+          ERRORS=$(grep -E "^e:.*error:|error:.*unresolved|error:.*not found|error:.*cannot|FAILED|Execution failed" build.log | head -30 || echo "No specific errors found")
+          LAST_LINES=$(tail -50 build.log)
+          BODY="## ❌ Build failed\n\n\`\`\`\n${ERRORS}\n\`\`\`\n\n### Last 50 lines:\n\`\`\`\n${LAST_LINES}\n\`\`\`"
+          curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/yjacobson-bot/app/commits/${{ github.sha }}/comments" \
+            -d "{\"body\": $(echo "$BODY" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')}"
           exit 1
 
       - name: Upload APK artifact
