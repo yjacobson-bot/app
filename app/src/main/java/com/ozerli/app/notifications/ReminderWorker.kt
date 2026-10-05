@@ -16,9 +16,6 @@ class ReminderWorker(
     override suspend fun doWork(): Result {
         val dao = AppDatabase.getInstance(context).requestDao()
         val now = System.currentTimeMillis()
-
-        // בדיקת בקשות שלא טופלו יותר מ-48 שעות
-        val twoDaysAgo = now - (48 * 60 * 60 * 1000)
         val allOpen = dao.getOverdueReminders(now)
 
         allOpen.forEach { request ->

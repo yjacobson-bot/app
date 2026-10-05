@@ -9,7 +9,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -449,7 +448,7 @@ fun BottomAppBarRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Stats
-            NavItem(icon = Icons.Outlined.BarChart, label = "סטטיסטיקות", onClick = onStatsClick)
+            NavItem(icon = Icons.Default.BarChart, label = "סטטיסטיקות", onClick = onStatsClick)
 
             // FAB center
             FloatingActionButton(
@@ -464,7 +463,7 @@ fun BottomAppBarRow(
             }
 
             // History
-            NavItem(icon = Icons.Outlined.History, label = "היסטוריה", onClick = onHistoryClick)
+            NavItem(icon = Icons.Default.History, label = "היסטוריה", onClick = onHistoryClick)
         }
     }
 }
