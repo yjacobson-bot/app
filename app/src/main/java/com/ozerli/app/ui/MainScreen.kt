@@ -68,85 +68,79 @@ fun MainScreen(
     ) { padding ->
 
         CompositionLocalProvider(LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) {
-            LazyColumn(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(bottom = 24.dp)
+                    .padding(padding)
             ) {
+                // ── Header (always visible) ──────────────────────────────────
+                HeaderCard(openCount = openCount, doneCount = doneCount, taskOpenCount = taskOpenCount)
+                TabSwitcher(activeTab = activeTab, onTabChange = { activeTab = it })
 
-                // ── Header ──────────────────────────────────────────────────
-                item {
-                    HeaderCard(openCount = openCount, doneCount = doneCount, taskOpenCount = taskOpenCount)
-                }
-
-                // ── Tab switcher ─────────────────────────────────────────────
-                item {
-                    TabSwitcher(activeTab = activeTab, onTabChange = { activeTab = it })
-                }
-
-                // ── Personal tasks tab ───────────────────────────────────────
+                // ── Content per tab ──────────────────────────────────────────
                 if (activeTab == 1) {
-                    item {
-                        PersonalTasksTab(viewModel = taskViewModel)
-                    }
-                    return@LazyColumn
-                }
-
-                // ── Empty state ──────────────────────────────────────────────
-                if (openRequests.isEmpty()) {
-                    item { EmptyStateBlock() }
+                    PersonalTasksTab(viewModel = taskViewModel)
                 } else {
-                    // ── Section label + sort toggle ──────────────────────────
-                    item {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                "בקשות פתוחות",
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp,
-                                color = TextSecondary,
-                                letterSpacing = 0.5.sp
-                            )
-                            Surface(
-                                onClick = { viewModel.toggleSort() },
-                                shape = RoundedCornerShape(10.dp),
-                                color = Indigo50
-                            ) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 24.dp)
+                    ) {
+                        // ── Empty state ──────────────────────────────────────
+                        if (openRequests.isEmpty()) {
+                            item { EmptyStateBlock() }
+                        } else {
+                            // ── Section label + sort toggle ──────────────────
+                            item {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        if (sortMode == SortMode.DATE) Icons.Default.CalendarToday else Icons.Default.PriorityHigh,
-                                        contentDescription = "מיון",
-                                        modifier = Modifier.size(13.dp),
-                                        tint = Indigo600
-                                    )
                                     Text(
-                                        if (sortMode == SortMode.DATE) "לפי תאריך" else "לפי דחיפות",
-                                        fontSize = 11.sp,
-                                        color = Indigo600,
-                                        fontWeight = FontWeight.Medium
+                                        "בקשות פתוחות",
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 13.sp,
+                                        color = TextSecondary,
+                                        letterSpacing = 0.5.sp
                                     )
+                                    Surface(
+                                        onClick = { viewModel.toggleSort() },
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Indigo50
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            Icon(
+                                                if (sortMode == SortMode.DATE) Icons.Default.CalendarToday else Icons.Default.PriorityHigh,
+                                                contentDescription = "מיון",
+                                                modifier = Modifier.size(13.dp),
+                                                tint = Indigo600
+                                            )
+                                            Text(
+                                                if (sortMode == SortMode.DATE) "לפי תאריך" else "לפי דחיפות",
+                                                fontSize = 11.sp,
+                                                color = Indigo600,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                    }
                                 }
                             }
+                            // ── Cards ────────────────────────────────────────
+                            items(openRequests, key = { it.id }) { req ->
+                                RequestCard(
+                                    request = req,
+                                    onDoneClick = { doneDialogRequest = req; doneNote = "" },
+                                    onDeleteClick = { viewModel.deleteRequest(req) },
+                                    onUrgencyChange = { viewModel.updateUrgency(req, it) }
+                                )
+                            }
                         }
-                    }
-                    // ── Cards ────────────────────────────────────────────────
-                    items(openRequests, key = { it.id }) { req ->
-                        RequestCard(
-                            request = req,
-                            onDoneClick = { doneDialogRequest = req; doneNote = "" },
-                            onDeleteClick = { viewModel.deleteRequest(req) },
-                            onUrgencyChange = { viewModel.updateUrgency(req, it) }
-                        )
                     }
                 }
             }
