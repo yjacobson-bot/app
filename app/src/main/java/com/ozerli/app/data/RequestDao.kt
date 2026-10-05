@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface RequestDao {
 
-    @Query("SELECT * FROM requests WHERE isDone = 0 ORDER BY urgency ASC, createdAt ASC")
+    @Query("SELECT * FROM requests WHERE isDone = 0 ORDER BY createdAt ASC")
     fun getOpenRequests(): Flow<List<Request>>
 
     @Query("SELECT * FROM requests WHERE isDone = 1 ORDER BY doneAt DESC")

@@ -6,16 +6,32 @@ import androidx.lifecycle.viewModelScope
 import com.ozerli.app.data.AppDatabase
 import com.ozerli.app.data.Request
 import com.ozerli.app.data.Urgency
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+enum class SortMode { URGENCY, DATE }
 
 class RequestViewModel(application: Application) : AndroidViewModel(application) {
 
     private val dao = AppDatabase.getInstance(application).requestDao()
 
+    val sortMode = MutableStateFlow(SortMode.URGENCY)
+
     val openRequests = dao.getOpenRequests()
+        .combine(sortMode) { list, mode ->
+            when (mode) {
+                SortMode.URGENCY -> list.sortedWith(compareBy({ it.urgency }, { it.createdAt }))
+                SortMode.DATE    -> list.sortedByDescending { it.createdAt }
+            }
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun toggleSort() {
+        sortMode.value = if (sortMode.value == SortMode.URGENCY) SortMode.DATE else SortMode.URGENCY
+    }
 
     val doneRequests = dao.getDoneRequests()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

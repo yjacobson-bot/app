@@ -27,6 +27,7 @@ import com.ozerli.app.data.Request
 import com.ozerli.app.data.Urgency
 import com.ozerli.app.ui.theme.*
 import com.ozerli.app.viewmodel.RequestViewModel
+import com.ozerli.app.viewmodel.SortMode
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -41,6 +42,7 @@ fun MainScreen(
     val openRequests by viewModel.openRequests.collectAsState()
     val openCount    by viewModel.openCount.collectAsState()
     val doneCount    by viewModel.doneCount.collectAsState()
+    val sortMode     by viewModel.sortMode.collectAsState()
 
     var doneDialogRequest by remember { mutableStateOf<Request?>(null) }
     var doneNote          by remember { mutableStateOf("") }
@@ -74,16 +76,47 @@ fun MainScreen(
                 if (openRequests.isEmpty()) {
                     item { EmptyStateBlock() }
                 } else {
-                    // ── Section label ────────────────────────────────────────
+                    // ── Section label + sort toggle ──────────────────────────
                     item {
-                        Text(
-                            "בקשות פתוחות",
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp,
-                            color = TextSecondary,
-                            letterSpacing = 0.5.sp
-                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "בקשות פתוחות",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp,
+                                color = TextSecondary,
+                                letterSpacing = 0.5.sp
+                            )
+                            Surface(
+                                onClick = { viewModel.toggleSort() },
+                                shape = RoundedCornerShape(10.dp),
+                                color = Indigo50
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        if (sortMode == SortMode.DATE) Icons.Default.CalendarToday else Icons.Default.PriorityHigh,
+                                        contentDescription = "מיון",
+                                        modifier = Modifier.size(13.dp),
+                                        tint = Indigo600
+                                    )
+                                    Text(
+                                        if (sortMode == SortMode.DATE) "לפי תאריך" else "לפי דחיפות",
+                                        fontSize = 11.sp,
+                                        color = Indigo600,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
                     }
                     // ── Cards ────────────────────────────────────────────────
                     items(openRequests, key = { it.id }) { req ->
@@ -227,7 +260,7 @@ fun RequestCard(
         Urgency.GREEN  -> Triple(GreenStrong, GreenLight, "רגיל")
     }
 
-    val dateFormat = remember { SimpleDateFormat("dd/MM/yy", Locale.getDefault()) }
+    val dateFormat = remember { SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault()) }
     var showUrgencyMenu  by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
