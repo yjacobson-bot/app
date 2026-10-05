@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.ozerli.app.data.AppDatabase
 import com.ozerli.app.data.Request
 import com.ozerli.app.data.Urgency
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -31,6 +34,35 @@ class RequestViewModel(application: Application) : AndroidViewModel(application)
 
     fun toggleSort() {
         sortMode.value = if (sortMode.value == SortMode.URGENCY) SortMode.DATE else SortMode.URGENCY
+    }
+
+    var requestToEdit: Request? by mutableStateOf(null)
+        private set
+
+    fun selectForEdit(request: Request) { requestToEdit = request }
+    fun clearEdit() { requestToEdit = null }
+
+    fun updateRequest(
+        original: Request,
+        personName: String,
+        shiur: String,
+        phone: String,
+        description: String,
+        urgency: Urgency,
+        reminderAt: Long?
+    ) {
+        viewModelScope.launch {
+            dao.update(
+                original.copy(
+                    personName  = personName.trim(),
+                    shiur       = shiur.trim(),
+                    phone       = phone.trim(),
+                    description = description.trim(),
+                    urgency     = urgency,
+                    reminderAt  = reminderAt
+                )
+            )
+        }
     }
 
     val doneRequests = dao.getDoneRequests()

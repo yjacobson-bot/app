@@ -1,6 +1,8 @@
 package com.ozerli.app.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -10,12 +12,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,16 +32,21 @@ fun AddRequestScreen(
     viewModel: RequestViewModel,
     onBack: () -> Unit
 ) {
-    var personName   by remember { mutableStateOf("") }
-    var shiur        by remember { mutableStateOf("") }
-    var phone        by remember { mutableStateOf("") }
-    var description  by remember { mutableStateOf("") }
-    var urgency      by remember { mutableStateOf(Urgency.YELLOW) }
-    var hasReminder  by remember { mutableStateOf(false) }
+    val existing = viewModel.requestToEdit
+    val isEdit   = existing != null
+
+    var personName   by remember { mutableStateOf(existing?.personName   ?: "") }
+    var shiur        by remember { mutableStateOf(existing?.shiur        ?: "") }
+    var phone        by remember { mutableStateOf(existing?.phone        ?: "") }
+    var description  by remember { mutableStateOf(existing?.description  ?: "") }
+    var urgency      by remember { mutableStateOf(existing?.urgency      ?: Urgency.YELLOW) }
+    var hasReminder  by remember { mutableStateOf(existing?.reminderAt != null) }
     var reminderDays by remember { mutableStateOf("2") }
 
     var nameError by remember { mutableStateOf(false) }
     var descError by remember { mutableStateOf(false) }
+
+    val focusManager = LocalFocusManager.current
 
     fun save() {
         nameError = personName.isBlank()
@@ -48,7 +56,13 @@ fun AddRequestScreen(
             val days = reminderDays.toLongOrNull() ?: 2L
             System.currentTimeMillis() + days * 86_400_000L
         } else null
-        viewModel.addRequest(personName, shiur, phone, description, urgency, reminderAt)
+
+        if (isEdit && existing != null) {
+            viewModel.updateRequest(existing, personName, shiur, phone, description, urgency, reminderAt)
+        } else {
+            viewModel.addRequest(personName, shiur, phone, description, urgency, reminderAt)
+        }
+        viewModel.clearEdit()
         onBack()
     }
 
@@ -56,9 +70,14 @@ fun AddRequestScreen(
         containerColor = Surface,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("בקשה חדשה", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                title = {
+                    Text(
+                        if (isEdit) "עריכת בקשה" else "בקשה חדשה",
+                        fontWeight = FontWeight.Bold, fontSize = 18.sp
+                    )
+                },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = { viewModel.clearEdit(); onBack() }) {
                         Icon(Icons.Default.Close, contentDescription = "סגור")
                     }
                 },
@@ -71,6 +90,7 @@ fun AddRequestScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+                    .pointerInput(Unit) { detectTapGestures(onTap = { focusManager.clearFocus() }) }
                     .verticalScroll(rememberScrollState())
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
@@ -176,11 +196,7 @@ fun AddRequestScreen(
                                 Spacer(Modifier.width(8.dp))
                                 Column {
                                     Text("תזכורת", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                                    Text(
-                                        "הזכר לי לחזור לענין הזה",
-                                        fontSize = 12.sp,
-                                        color = TextSecondary
-                                    )
+                                    Text("הזכר לי לחזור לענין הזה", fontSize = 12.sp, color = TextSecondary)
                                 }
                             }
                             Switch(
@@ -207,6 +223,7 @@ fun AddRequestScreen(
                                     modifier = Modifier.width(72.dp),
                                     singleLine = true,
                                     shape = RoundedCornerShape(10.dp),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     colors = fieldColors()
                                 )
                                 Text("ימים", color = TextSecondary, fontSize = 14.sp)
@@ -224,7 +241,10 @@ fun AddRequestScreen(
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Indigo600)
                 ) {
-                    Text("הוסף בקשה", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        if (isEdit) "שמור שינויים" else "הוסף בקשה",
+                        fontSize = 16.sp, fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -233,48 +253,26 @@ fun AddRequestScreen(
 
 @Composable
 private fun SectionLabel(text: String) {
-    Text(
-        text,
-        fontSize = 13.sp,
-        fontWeight = FontWeight.SemiBold,
-        color = TextSecondary,
-        letterSpacing = 0.3.sp
-    )
+    Text(text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = TextSecondary, letterSpacing = 0.3.sp)
 }
 
 @Composable
 private fun UrgencyOption(
-    label: String,
-    emoji: String,
-    selected: Boolean,
-    color: Color,
-    bgColor: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    label: String, emoji: String, selected: Boolean,
+    color: Color, bgColor: Color, modifier: Modifier = Modifier, onClick: () -> Unit
 ) {
     Surface(
-        onClick = onClick,
-        modifier = modifier,
+        onClick = onClick, modifier = modifier,
         shape = RoundedCornerShape(14.dp),
         color = if (selected) bgColor else CardWhite,
-        border = BorderStroke(
-            width = if (selected) 2.dp else 1.dp,
-            color = if (selected) color else Divider
-        )
+        border = BorderStroke(if (selected) 2.dp else 1.dp, if (selected) color else Divider)
     ) {
-        Column(
-            modifier = Modifier.padding(vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(modifier = Modifier.padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(emoji, fontSize = 20.sp)
             Spacer(Modifier.height(4.dp))
-            Text(
-                label,
-                fontSize = 13.sp,
+            Text(label, fontSize = 13.sp,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                color = if (selected) color else TextSecondary,
-                textAlign = TextAlign.Center
-            )
+                color = if (selected) color else TextSecondary, textAlign = TextAlign.Center)
         }
     }
 }

@@ -1,6 +1,9 @@
 package com.ozerli.app.viewmodel
 
 import android.app.Application
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.ozerli.app.data.AppDatabase
@@ -54,5 +57,24 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updatePriority(task: Task, priority: Urgency) {
         viewModelScope.launch { dao.update(task.copy(priority = priority)) }
+    }
+
+    var taskToEdit: Task? by mutableStateOf(null)
+        private set
+
+    fun selectForEdit(task: Task) { taskToEdit = task }
+    fun clearEdit() { taskToEdit = null }
+
+    fun updateTask(original: Task, title: String, description: String, priority: Urgency, dueDate: Long?) {
+        viewModelScope.launch {
+            dao.update(
+                original.copy(
+                    title       = title.trim(),
+                    description = description.trim(),
+                    priority    = priority,
+                    dueDate     = dueDate
+                )
+            )
+        }
     }
 }

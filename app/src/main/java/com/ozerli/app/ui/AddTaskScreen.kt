@@ -1,9 +1,11 @@
 package com.ozerli.app.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -12,15 +14,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ozerli.app.data.Urgency
 import com.ozerli.app.ui.theme.*
 import com.ozerli.app.viewmodel.TaskViewModel
-import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,12 +32,17 @@ fun AddTaskScreen(
     viewModel: TaskViewModel,
     onBack: () -> Unit
 ) {
-    var title       by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var priority    by remember { mutableStateOf(Urgency.YELLOW) }
-    var hasDueDate  by remember { mutableStateOf(false) }
+    val existing   = viewModel.taskToEdit
+    val isEdit     = existing != null
+
+    var title       by remember { mutableStateOf(existing?.title       ?: "") }
+    var description by remember { mutableStateOf(existing?.description ?: "") }
+    var priority    by remember { mutableStateOf(existing?.priority    ?: Urgency.YELLOW) }
+    var hasDueDate  by remember { mutableStateOf(existing?.dueDate != null) }
     var dueDays     by remember { mutableStateOf("3") }
     var titleError  by remember { mutableStateOf(false) }
+
+    val focusManager = LocalFocusManager.current
 
     fun save() {
         titleError = title.isBlank()
@@ -42,7 +51,13 @@ fun AddTaskScreen(
             val days = dueDays.toLongOrNull() ?: 3L
             System.currentTimeMillis() + days * 86_400_000L
         } else null
-        viewModel.addTask(title, description, priority, dueDate)
+
+        if (isEdit && existing != null) {
+            viewModel.updateTask(existing, title, description, priority, dueDate)
+        } else {
+            viewModel.addTask(title, description, priority, dueDate)
+        }
+        viewModel.clearEdit()
         onBack()
     }
 
@@ -50,9 +65,14 @@ fun AddTaskScreen(
         containerColor = Surface,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("מטלה חדשה", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                title = {
+                    Text(
+                        if (isEdit) "עריכת מטלה" else "מטלה חדשה",
+                        fontWeight = FontWeight.Bold, fontSize = 18.sp
+                    )
+                },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = { viewModel.clearEdit(); onBack() }) {
                         Icon(Icons.Default.Close, contentDescription = "סגור")
                     }
                 },
@@ -65,6 +85,7 @@ fun AddTaskScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+                    .pointerInput(Unit) { detectTapGestures(onTap = { focusManager.clearFocus() }) }
                     .verticalScroll(rememberScrollState())
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
@@ -143,11 +164,7 @@ fun AddTaskScreen(
                                 Spacer(Modifier.width(8.dp))
                                 Column {
                                     Text("תאריך יעד", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                                    Text(
-                                        "הגדר מועד להשלמה",
-                                        fontSize = 12.sp,
-                                        color = TextSecondary
-                                    )
+                                    Text("הגדר מועד להשלמה", fontSize = 12.sp, color = TextSecondary)
                                 }
                             }
                             Switch(
@@ -174,6 +191,7 @@ fun AddTaskScreen(
                                     modifier = Modifier.width(72.dp),
                                     singleLine = true,
                                     shape = RoundedCornerShape(10.dp),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     colors = taskFieldColors()
                                 )
                                 Text("ימים", color = TextSecondary, fontSize = 14.sp)
@@ -191,7 +209,10 @@ fun AddTaskScreen(
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = GreenStrong)
                 ) {
-                    Text("הוסף מטלה", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        if (isEdit) "שמור שינויים" else "הוסף מטלה",
+                        fontSize = 16.sp, fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

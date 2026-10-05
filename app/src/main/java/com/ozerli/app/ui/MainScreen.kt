@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ozerli.app.data.Request
+import com.ozerli.app.data.Task
 import com.ozerli.app.data.Urgency
 import com.ozerli.app.ui.theme.*
 import com.ozerli.app.viewmodel.RequestViewModel
@@ -42,7 +43,9 @@ fun MainScreen(
     onAddRequestClick: () -> Unit,
     onAddTaskClick: () -> Unit,
     onStatsClick: () -> Unit,
-    onHistoryClick: () -> Unit
+    onHistoryClick: () -> Unit,
+    onEditRequest: (Request) -> Unit = {},
+    onEditTask: (Task) -> Unit = {}
 ) {
     val openRequests  by viewModel.openRequests.collectAsState()
     val openCount     by viewModel.openCount.collectAsState()
@@ -79,7 +82,7 @@ fun MainScreen(
 
                 // ── Content per tab ──────────────────────────────────────────
                 if (activeTab == 1) {
-                    PersonalTasksTab(viewModel = taskViewModel)
+                    PersonalTasksTab(viewModel = taskViewModel, onEditClick = { onEditTask(it) })
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
@@ -137,7 +140,8 @@ fun MainScreen(
                                     request = req,
                                     onDoneClick = { doneDialogRequest = req; doneNote = "" },
                                     onDeleteClick = { viewModel.deleteRequest(req) },
-                                    onUrgencyChange = { viewModel.updateUrgency(req, it) }
+                                    onUrgencyChange = { viewModel.updateUrgency(req, it) },
+                                    onEditClick = { onEditRequest(req) }
                                 )
                             }
                         }
@@ -302,7 +306,8 @@ fun RequestCard(
     request: Request,
     onDoneClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    onUrgencyChange: (Urgency) -> Unit
+    onUrgencyChange: (Urgency) -> Unit,
+    onEditClick: () -> Unit = {}
 ) {
     val (urgencyColor, urgencyBg, urgencyLabel) = when (request.urgency) {
         Urgency.RED    -> Triple(RedStrong,   RedLight,   "דחוף")
@@ -462,16 +467,29 @@ fun RequestCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
-                    onClick = { showDeleteConfirm = true },
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "מחק",
-                        tint = TextTertiary,
-                        modifier = Modifier.size(20.dp)
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    IconButton(
+                        onClick = { showDeleteConfirm = true },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "מחק",
+                            tint = TextTertiary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = onEditClick,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "ערוך",
+                            tint = Indigo600,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
 
                 Button(

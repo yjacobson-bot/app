@@ -29,7 +29,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun PersonalTasksTab(viewModel: TaskViewModel) {
+fun PersonalTasksTab(viewModel: TaskViewModel, onEditClick: (Task) -> Unit = {}) {
     val openTasks by viewModel.openTasks.collectAsState()
     val doneTasks by viewModel.doneTasks.collectAsState()
     var showDone  by remember { mutableStateOf(false) }
@@ -58,7 +58,8 @@ fun PersonalTasksTab(viewModel: TaskViewModel) {
                             task = task,
                             onDoneClick = { viewModel.markDone(task) },
                             onDeleteClick = { viewModel.deleteTask(task) },
-                            onPriorityChange = { viewModel.updatePriority(task, it) }
+                            onPriorityChange = { viewModel.updatePriority(task, it) },
+                            onEditClick = { onEditClick(task) }
                         )
                     }
                 }
@@ -112,7 +113,8 @@ fun PersonalTasksTab(viewModel: TaskViewModel) {
                                 task = task,
                                 onDoneClick = { viewModel.reopenTask(task) },
                                 onDeleteClick = { viewModel.deleteTask(task) },
-                                onPriorityChange = { viewModel.updatePriority(task, it) }
+                                onPriorityChange = { viewModel.updatePriority(task, it) },
+                                onEditClick = { onEditClick(task) }
                             )
                         }
                     }
@@ -127,7 +129,8 @@ fun TaskCard(
     task: Task,
     onDoneClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    onPriorityChange: (Urgency) -> Unit
+    onPriorityChange: (Urgency) -> Unit,
+    onEditClick: () -> Unit = {}
 ) {
     val dateFormat = remember { SimpleDateFormat("dd/MM/yy", Locale.getDefault()) }
     val (priorityColor, priorityBg) = when (task.priority) {
@@ -286,6 +289,17 @@ fun TaskCard(
                             )
                         }
                     }
+                }
+                IconButton(
+                    onClick = { onEditClick() },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "ערוך",
+                        tint = Indigo600,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
                 IconButton(
                     onClick = { showDeleteConfirm = true },

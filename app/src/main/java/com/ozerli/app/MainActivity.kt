@@ -45,12 +45,14 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController = nav, startDestination = "main") {
                     composable("main") {
                         MainScreen(
-                            viewModel       = vm,
-                            taskViewModel   = taskVm,
+                            viewModel         = vm,
+                            taskViewModel     = taskVm,
                             onAddRequestClick = { nav.navigate("add_request") },
                             onAddTaskClick    = { nav.navigate("add_task") },
                             onStatsClick      = { nav.navigate("stats") },
-                            onHistoryClick    = { nav.navigate("history") }
+                            onHistoryClick    = { nav.navigate("history") },
+                            onEditRequest     = { vm.selectForEdit(it); nav.navigate("add_request") },
+                            onEditTask        = { taskVm.selectForEdit(it); nav.navigate("add_task") }
                         )
                     }
                     composable("add_request") {
