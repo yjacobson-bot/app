@@ -48,6 +48,7 @@ class RequestViewModel(application: Application) : AndroidViewModel(application)
     fun addRequest(
         personName: String,
         shiur: String,
+        phone: String,
         description: String,
         urgency: Urgency,
         reminderAt: Long?
@@ -57,6 +58,7 @@ class RequestViewModel(application: Application) : AndroidViewModel(application)
                 Request(
                     personName = personName.trim(),
                     shiur = shiur.trim(),
+                    phone = phone.trim(),
                     description = description.trim(),
                     urgency = urgency,
                     reminderAt = reminderAt

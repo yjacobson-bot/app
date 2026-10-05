@@ -5,10 +5,12 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +31,7 @@ fun AddRequestScreen(
 ) {
     var personName   by remember { mutableStateOf("") }
     var shiur        by remember { mutableStateOf("") }
+    var phone        by remember { mutableStateOf("") }
     var description  by remember { mutableStateOf("") }
     var urgency      by remember { mutableStateOf(Urgency.YELLOW) }
     var hasReminder  by remember { mutableStateOf(false) }
@@ -45,7 +48,7 @@ fun AddRequestScreen(
             val days = reminderDays.toLongOrNull() ?: 2L
             System.currentTimeMillis() + days * 86_400_000L
         } else null
-        viewModel.addRequest(personName, shiur, description, urgency, reminderAt)
+        viewModel.addRequest(personName, shiur, phone, description, urgency, reminderAt)
         onBack()
     }
 
@@ -96,6 +99,19 @@ fun AddRequestScreen(
                     placeholder = { Text("א', ב', ג'...") },
                     shape = RoundedCornerShape(14.dp),
                     singleLine = true,
+                    colors = fieldColors()
+                )
+
+                // ── Phone ─────────────────────────────────────────────────
+                SectionLabel("טלפון (אופציונלי)")
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("050-0000000") },
+                    shape = RoundedCornerShape(14.dp),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     colors = fieldColors()
                 )
 

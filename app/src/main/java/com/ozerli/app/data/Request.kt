@@ -13,6 +13,7 @@ data class Request(
     val id: Long = 0,
     val personName: String,
     val shiur: String = "",          // שיעור / כיתה – אופציונלי
+    val phone: String = "",          // טלפון – אופציונלי
     val description: String,
     val urgency: Urgency = Urgency.YELLOW,
     val createdAt: Long = System.currentTimeMillis(),

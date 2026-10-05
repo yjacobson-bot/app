@@ -323,11 +323,24 @@ fun RequestCard(
                             }
                         }
                     }
-                    Text(
-                        dateFormat.format(Date(request.createdAt)),
-                        fontSize = 11.sp,
-                        color = TextTertiary
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            dateFormat.format(Date(request.createdAt)),
+                            fontSize = 11.sp,
+                            color = TextTertiary
+                        )
+                        if (request.phone.isNotEmpty()) {
+                            Text("·", fontSize = 11.sp, color = TextTertiary)
+                            Text(
+                                request.phone,
+                                fontSize = 11.sp,
+                                color = Indigo600
+                            )
+                        }
+                    }
                 }
 
                 // Urgency badge (tappable)
