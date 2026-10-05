@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -263,6 +264,7 @@ fun RequestCard(
 
     val dateFormat = remember { SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault()) }
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     var showUrgencyMenu  by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -346,7 +348,7 @@ fun RequestCard(
                 // Urgency badge (tappable)
                 Box {
                     Surface(
-                        onClick = { focusManager.clearFocus(); showUrgencyMenu = true },
+                        onClick = { keyboardController?.hide(); focusManager.clearFocus(); showUrgencyMenu = true },
                         color = urgencyBg,
                         shape = RoundedCornerShape(10.dp)
                     ) {
