@@ -32,17 +32,24 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
+        id: build
+        run: ./gradlew assembleRelease --no-daemon 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+        continue-on-error: true
 
-      - name: Upload build log on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build.log
-          retention-days: 3
+      - name: Surface Kotlin errors as annotations
+        if: steps.build.outcome == 'failure'
+        run: |
+          echo "=== KOTLIN ERRORS ==="
+          grep -E "error:|FAILED|Exception in thread|Caused by:" build.log | head -40 || true
+          echo "=== LAST 80 LINES OF BUILD LOG ==="
+          tail -80 build.log || true
+          # Also emit as GitHub annotations
+          grep -oP "(?<=error: ).*" build.log | head -20 | while IFS= read -r msg; do
+            echo "::error::$msg"
+          done
+          exit 1
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
