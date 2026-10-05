@@ -30,6 +30,7 @@ import com.ozerli.app.data.Urgency
 import com.ozerli.app.ui.theme.*
 import com.ozerli.app.viewmodel.RequestViewModel
 import com.ozerli.app.viewmodel.SortMode
+import com.ozerli.app.viewmodel.TaskViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -37,15 +38,19 @@ import java.util.*
 @Composable
 fun MainScreen(
     viewModel: RequestViewModel,
-    onAddClick: () -> Unit,
+    taskViewModel: TaskViewModel,
+    onAddRequestClick: () -> Unit,
+    onAddTaskClick: () -> Unit,
     onStatsClick: () -> Unit,
     onHistoryClick: () -> Unit
 ) {
-    val openRequests by viewModel.openRequests.collectAsState()
-    val openCount    by viewModel.openCount.collectAsState()
-    val doneCount    by viewModel.doneCount.collectAsState()
-    val sortMode     by viewModel.sortMode.collectAsState()
+    val openRequests  by viewModel.openRequests.collectAsState()
+    val openCount     by viewModel.openCount.collectAsState()
+    val doneCount     by viewModel.doneCount.collectAsState()
+    val sortMode      by viewModel.sortMode.collectAsState()
+    val taskOpenCount by taskViewModel.openCount.collectAsState()
 
+    var activeTab by remember { mutableStateOf(0) } // 0=requests, 1=tasks
     var doneDialogRequest by remember { mutableStateOf<Request?>(null) }
     var doneNote          by remember { mutableStateOf("") }
 
@@ -53,10 +58,11 @@ fun MainScreen(
         containerColor = Surface,
         bottomBar = {
             BottomAppBarRow(
-                onStatsClick  = onStatsClick,
+                onStatsClick   = onStatsClick,
                 onHistoryClick = onHistoryClick,
-                onAddClick    = onAddClick,
-                openCount     = openCount
+                onAddClick     = { if (activeTab == 0) onAddRequestClick() else onAddTaskClick() },
+                openCount      = openCount,
+                taskOpenCount  = taskOpenCount
             )
         }
     ) { padding ->
@@ -71,7 +77,20 @@ fun MainScreen(
 
                 // ── Header ──────────────────────────────────────────────────
                 item {
-                    HeaderCard(openCount = openCount, doneCount = doneCount)
+                    HeaderCard(openCount = openCount, doneCount = doneCount, taskOpenCount = taskOpenCount)
+                }
+
+                // ── Tab switcher ─────────────────────────────────────────────
+                item {
+                    TabSwitcher(activeTab = activeTab, onTabChange = { activeTab = it })
+                }
+
+                // ── Personal tasks tab ───────────────────────────────────────
+                if (activeTab == 1) {
+                    item {
+                        PersonalTasksTab(viewModel = taskViewModel)
+                    }
+                    return@LazyColumn
                 }
 
                 // ── Empty state ──────────────────────────────────────────────
@@ -189,7 +208,41 @@ fun MainScreen(
 // Header card with gradient
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun HeaderCard(openCount: Int, doneCount: Int) {
+private fun TabSwitcher(activeTab: Int, onTabChange: (Int) -> Unit) {
+    CompositionLocalProvider(LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            shape = RoundedCornerShape(14.dp),
+            color = Indigo50
+        ) {
+            Row(modifier = Modifier.padding(4.dp)) {
+                listOf("🤝  בקשות עזרה", "✅  מטלות שלי").forEachIndexed { index, label ->
+                    Surface(
+                        onClick = { onTabChange(index) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (activeTab == index) CardWhite else Color.Transparent,
+                        shadowElevation = if (activeTab == index) 2.dp else 0.dp
+                    ) {
+                        Text(
+                            label,
+                            modifier = Modifier.padding(vertical = 10.dp),
+                            fontSize = 13.sp,
+                            fontWeight = if (activeTab == index) FontWeight.Bold else FontWeight.Normal,
+                            color = if (activeTab == index) Indigo700 else TextSecondary,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeaderCard(openCount: Int, doneCount: Int, taskOpenCount: Int = 0) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -221,8 +274,9 @@ private fun HeaderCard(openCount: Int, doneCount: Int) {
                 )
                 Spacer(Modifier.height(20.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StatPill(label = "פתוחות", value = "$openCount", color = Color.White)
-                    StatPill(label = "טופלו",  value = "$doneCount", color = Color.White.copy(alpha = 0.8f))
+                    StatPill(label = "בקשות",  value = "$openCount",     color = Color.White)
+                    StatPill(label = "מטלות",  value = "$taskOpenCount", color = Color.White.copy(alpha = 0.8f))
+                    StatPill(label = "טופלו",  value = "$doneCount",     color = Color.White.copy(alpha = 0.6f))
                 }
             }
         }
@@ -483,7 +537,8 @@ fun BottomAppBarRow(
     onStatsClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onAddClick: () -> Unit,
-    openCount: Int
+    openCount: Int,
+    taskOpenCount: Int = 0
 ) {
     Surface(
         shadowElevation = 16.dp,

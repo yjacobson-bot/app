@@ -13,11 +13,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.ozerli.app.notifications.ReminderWorker
 import com.ozerli.app.ui.AddRequestScreen
+import com.ozerli.app.ui.AddTaskScreen
 import com.ozerli.app.ui.HistoryScreen
 import com.ozerli.app.ui.MainScreen
 import com.ozerli.app.ui.StatsScreen
 import com.ozerli.app.ui.theme.OzerLiTheme
 import com.ozerli.app.viewmodel.RequestViewModel
+import com.ozerli.app.viewmodel.TaskViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -36,20 +38,26 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             OzerLiTheme {
-                val nav = rememberNavController()
-                val vm: RequestViewModel = viewModel()
+                val nav     = rememberNavController()
+                val vm      : RequestViewModel = viewModel()
+                val taskVm  : TaskViewModel    = viewModel()
 
                 NavHost(navController = nav, startDestination = "main") {
                     composable("main") {
                         MainScreen(
-                            viewModel      = vm,
-                            onAddClick     = { nav.navigate("add") },
-                            onStatsClick   = { nav.navigate("stats") },
-                            onHistoryClick = { nav.navigate("history") }
+                            viewModel       = vm,
+                            taskViewModel   = taskVm,
+                            onAddRequestClick = { nav.navigate("add_request") },
+                            onAddTaskClick    = { nav.navigate("add_task") },
+                            onStatsClick      = { nav.navigate("stats") },
+                            onHistoryClick    = { nav.navigate("history") }
                         )
                     }
-                    composable("add") {
+                    composable("add_request") {
                         AddRequestScreen(viewModel = vm, onBack = { nav.popBackStack() })
+                    }
+                    composable("add_task") {
+                        AddTaskScreen(viewModel = taskVm, onBack = { nav.popBackStack() })
                     }
                     composable("stats") {
                         StatsScreen(viewModel = vm, onBack = { nav.popBackStack() })
