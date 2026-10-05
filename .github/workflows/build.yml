@@ -18,48 +18,43 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          cache: gradle
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/libs.versions.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Make gradlew executable
+      - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease --stacktrace
-        env:
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: OzerLi-APK
           path: app/build/outputs/apk/release/*.apk
           retention-days: 30
 
-      - name: Create Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: "עוזר לי v1.0.${{ github.run_number }}"
           body: |
-            ## עוזר לי 🤝
-            אפליקציה לניהול בקשות עזרה - 100% אופליין
+            ## עוזר לי 🤝 — מנהל בקשות עזרה אישי
 
-            ### התקנה
-            1. הורד את קובץ ה-APK
-            2. אפשר התקנה ממקורות לא ידועים בהגדרות
-            3. פתח את הקובץ והתקן
+            אפליקציה אופליין לניהול כל מי שפנה אליך לעזרה.
+
+            ### ✨ פיצ'רים
+            - רשימת בקשות פתוחות עם דחיפות (אדום / צהוב / ירוק)
+            - שדה שיעור אופציונלי לכל בקשה
+            - תזכורות חכמות
+            - היסטוריה וסטטיסטיקות
+
+            ### 📲 התקנה
+            1. הורד את ה-APK למטה
+            2. הגדרות ← אפליקציות ← מקורות לא ידועים ← אפשר
+            3. פתח את הקובץ ← התקן
+
           files: app/build/outputs/apk/release/*.apk
-          draft: false
-          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -5,10 +5,8 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,51 +21,41 @@ import com.ozerli.app.viewmodel.RequestViewModel
 
 class MainActivity : ComponentActivity() {
 
-    private val requestNotificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* granted */ }
+    private val requestNotifPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* granted or not */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // בקשת הרשאת התראות
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            requestNotifPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        // הפעלת תזכורות תקופתיות
         ReminderWorker.schedule(this)
 
         setContent {
             OzerLiTheme {
-                val navController = rememberNavController()
-                val viewModel: RequestViewModel = viewModel()
+                val nav = rememberNavController()
+                val vm: RequestViewModel = viewModel()
 
-                NavHost(navController = navController, startDestination = "main") {
+                NavHost(navController = nav, startDestination = "main") {
                     composable("main") {
                         MainScreen(
-                            viewModel = viewModel,
-                            onAddClick = { navController.navigate("add") },
-                            onStatsClick = { navController.navigate("stats") },
-                            onHistoryClick = { navController.navigate("history") }
+                            viewModel      = vm,
+                            onAddClick     = { nav.navigate("add") },
+                            onStatsClick   = { nav.navigate("stats") },
+                            onHistoryClick = { nav.navigate("history") }
                         )
                     }
                     composable("add") {
-                        AddRequestScreen(
-                            viewModel = viewModel,
-                            onBack = { navController.popBackStack() }
-                        )
+                        AddRequestScreen(viewModel = vm, onBack = { nav.popBackStack() })
                     }
                     composable("stats") {
-                        StatsScreen(
-                            viewModel = viewModel,
-                            onBack = { navController.popBackStack() }
-                        )
+                        StatsScreen(viewModel = vm, onBack = { nav.popBackStack() })
                     }
                     composable("history") {
-                        HistoryScreen(
-                            viewModel = viewModel,
-                            onBack = { navController.popBackStack() }
-                        )
+                        HistoryScreen(viewModel = vm, onBack = { nav.popBackStack() })
                     }
                 }
             }

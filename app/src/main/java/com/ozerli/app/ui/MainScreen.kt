@@ -1,16 +1,22 @@
 package com.ozerli.app.ui
 
-import androidx.compose.foundation.background
+import androidx.compose.animation.*
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -33,126 +39,181 @@ fun MainScreen(
     onHistoryClick: () -> Unit
 ) {
     val openRequests by viewModel.openRequests.collectAsState()
-    val openCount by viewModel.openCount.collectAsState()
+    val openCount    by viewModel.openCount.collectAsState()
+    val doneCount    by viewModel.doneCount.collectAsState()
 
-    var showDoneDialog by remember { mutableStateOf<Request?>(null) }
-    var doneNote by remember { mutableStateOf("") }
+    var doneDialogRequest by remember { mutableStateOf<Request?>(null) }
+    var doneNote          by remember { mutableStateOf("") }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    CompositionLocalProvider(LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) {
-                        Column {
-                            Text(
-                                "עוזר לי 🤝",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp
-                            )
-                            if (openCount > 0) {
-                                Text(
-                                    "$openCount בקשות פתוחות",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                                )
-                            }
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = Color.White,
-                    actionIconContentColor = Color.White
-                ),
-                actions = {
-                    IconButton(onClick = onHistoryClick) {
-                        Icon(Icons.Default.History, contentDescription = "היסטוריה")
-                    }
-                    IconButton(onClick = onStatsClick) {
-                        Icon(Icons.Default.BarChart, contentDescription = "סטטיסטיקות")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onAddClick,
-                icon = { Icon(Icons.Default.Add, contentDescription = "הוסף") },
-                text = { Text("בקשה חדשה") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White
+        containerColor = Surface,
+        bottomBar = {
+            BottomAppBarRow(
+                onStatsClick  = onStatsClick,
+                onHistoryClick = onHistoryClick,
+                onAddClick    = onAddClick,
+                openCount     = openCount
             )
         }
-    ) { paddingValues ->
+    ) { padding ->
+
         CompositionLocalProvider(LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) {
-            if (openRequests.isEmpty()) {
-                EmptyState(Modifier.padding(paddingValues))
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(openRequests, key = { it.id }) { request ->
-                        RequestCard(
-                            request = request,
-                            onDoneClick = {
-                                showDoneDialog = request
-                                doneNote = ""
-                            },
-                            onDeleteClick = { viewModel.deleteRequest(request) },
-                            onUrgencyChange = { urgency -> viewModel.updateUrgency(request, urgency) }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(bottom = 24.dp)
+            ) {
+
+                // ── Header ──────────────────────────────────────────────────
+                item {
+                    HeaderCard(openCount = openCount, doneCount = doneCount)
+                }
+
+                // ── Empty state ──────────────────────────────────────────────
+                if (openRequests.isEmpty()) {
+                    item { EmptyStateBlock() }
+                } else {
+                    // ── Section label ────────────────────────────────────────
+                    item {
+                        Text(
+                            "בקשות פתוחות",
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp,
+                            color = TextSecondary,
+                            letterSpacing = 0.5.sp
                         )
                     }
-                    item { Spacer(Modifier.height(80.dp)) }
+                    // ── Cards ────────────────────────────────────────────────
+                    items(openRequests, key = { it.id }) { req ->
+                        RequestCard(
+                            request = req,
+                            onDoneClick = { doneDialogRequest = req; doneNote = "" },
+                            onDeleteClick = { viewModel.deleteRequest(req) },
+                            onUrgencyChange = { viewModel.updateUrgency(req, it) }
+                        )
+                    }
                 }
             }
         }
     }
 
-    // דיאלוג סיום טיפול
-    showDoneDialog?.let { request ->
+    // ── Done dialog ────────────────────────────────────────────────────────
+    doneDialogRequest?.let { req ->
         AlertDialog(
-            onDismissRequest = { showDoneDialog = null },
+            onDismissRequest = { doneDialogRequest = null },
+            shape = RoundedCornerShape(24.dp),
+            containerColor = CardWhite,
             title = {
-                Text("סיום טיפול", textAlign = TextAlign.Right, modifier = Modifier.fillMaxWidth())
+                CompositionLocalProvider(LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) {
+                    Text("✅  סיימתי לטפל", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                }
             },
             text = {
-                Column {
-                    Text(
-                        "סימון כטופל: ${request.personName}",
-                        fontWeight = FontWeight.Medium
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = doneNote,
-                        onValueChange = { doneNote = it },
-                        label = { Text("הערה (אופציונלי)") },
-                        placeholder = { Text("מה עשית?") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 2
-                    )
+                CompositionLocalProvider(LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) {
+                    Column {
+                        Surface(
+                            color = Indigo50,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                req.personName + if (req.shiur.isNotEmpty()) " · ${req.shiur}" else "",
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                fontWeight = FontWeight.Medium,
+                                color = Indigo700
+                            )
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = doneNote,
+                            onValueChange = { doneNote = it },
+                            label = { Text("הערה קצרה (אופציונלי)") },
+                            placeholder = { Text("מה עשית?") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            minLines = 2
+                        )
+                    }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    viewModel.markDone(request, doneNote)
-                    showDoneDialog = null
-                }) {
-                    Text("טיפלתי ✓")
-                }
+                Button(
+                    onClick = { viewModel.markDone(req, doneNote); doneDialogRequest = null },
+                    shape = RoundedCornerShape(14.dp)
+                ) { Text("שמור") }
             },
             dismissButton = {
-                TextButton(onClick = { showDoneDialog = null }) {
-                    Text("ביטול")
-                }
+                TextButton(onClick = { doneDialogRequest = null }) { Text("ביטול") }
             }
         )
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Header card with gradient
+// ─────────────────────────────────────────────────────────────────────────────
+@Composable
+private fun HeaderCard(openCount: Int, doneCount: Int) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .shadow(8.dp, RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                Brush.linearGradient(listOf(Indigo700, Indigo500))
+            )
+            .padding(24.dp)
+    ) {
+        CompositionLocalProvider(LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🤝", fontSize = 28.sp)
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        "עוזר לי",
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "מנהל בקשות עזרה אישי",
+                    fontSize = 13.sp,
+                    color = Color.White.copy(alpha = 0.75f)
+                )
+                Spacer(Modifier.height(20.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StatPill(label = "פתוחות", value = "$openCount", color = Color.White)
+                    StatPill(label = "טופלו",  value = "$doneCount", color = Color.White.copy(alpha = 0.8f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatPill(label: String, value: String, color: Color) {
+    Surface(
+        color = Color.White.copy(alpha = 0.15f),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(value, fontWeight = FontWeight.Bold, color = color, fontSize = 18.sp)
+            Text(label,  color = color.copy(alpha = 0.8f), fontSize = 13.sp)
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Request card
+// ─────────────────────────────────────────────────────────────────────────────
 @Composable
 fun RequestCard(
     request: Request,
@@ -160,164 +221,158 @@ fun RequestCard(
     onDeleteClick: () -> Unit,
     onUrgencyChange: (Urgency) -> Unit
 ) {
-    val urgencyColor = when (request.urgency) {
-        Urgency.RED -> UrgencyRed
-        Urgency.YELLOW -> UrgencyYellow
-        Urgency.GREEN -> UrgencyGreen
+    val (urgencyColor, urgencyBg, urgencyLabel) = when (request.urgency) {
+        Urgency.RED    -> Triple(RedStrong,   RedLight,   "דחוף")
+        Urgency.YELLOW -> Triple(AmberStrong, AmberLight, "בינוני")
+        Urgency.GREEN  -> Triple(GreenStrong, GreenLight, "רגיל")
     }
-    val urgencyBg = when (request.urgency) {
-        Urgency.RED -> UrgencyRedLight
-        Urgency.YELLOW -> UrgencyYellowLight
-        Urgency.GREEN -> UrgencyGreenLight
-    }
-    val dateFormat = remember { SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault()) }
 
-    var showUrgencyMenu by remember { mutableStateOf(false) }
+    val dateFormat = remember { SimpleDateFormat("dd/MM/yy", Locale.getDefault()) }
+    var showUrgencyMenu  by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 5.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = CardWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp, hoveredElevation = 4.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            // פס צבע צד שמאל (RTL = ימין)
-            Box(
-                modifier = Modifier
-                    .width(6.dp)
-                    .fillMaxHeight()
-                    .background(urgencyColor, RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))
-            )
+        Column(modifier = Modifier.padding(16.dp)) {
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(12.dp)
+            // ── Row 1: avatar + name + badge ──────────────────────────────
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                // שורה ראשונה: שם + שיעור + תג דחיפות
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // Initials avatar
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(Indigo100),
+                    contentAlignment = Alignment.Center
                 ) {
+                    Text(
+                        request.personName.take(1),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = Indigo700
+                    )
+                }
+
+                Spacer(Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             request.personName,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
+                            fontSize = 16.sp,
+                            color = TextPrimary
                         )
                         if (request.shiur.isNotEmpty()) {
                             Spacer(Modifier.width(6.dp))
                             Surface(
-                                color = MaterialTheme.colorScheme.primaryContainer,
+                                color = Indigo50,
                                 shape = RoundedCornerShape(6.dp)
                             ) {
                                 Text(
                                     request.shiur,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
                                     fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    color = Indigo600,
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }
                     }
-
-                    // תג דחיפות – ניתן ללחיצה לשינוי
-                    Box {
-                        Surface(
-                            onClick = { showUrgencyMenu = true },
-                            color = urgencyBg,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                when (request.urgency) {
-                                    Urgency.RED -> "🔴 דחוף"
-                                    Urgency.YELLOW -> "🟡 בינוני"
-                                    Urgency.GREEN -> "🟢 רגיל"
-                                },
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                fontSize = 12.sp,
-                                color = urgencyColor,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showUrgencyMenu,
-                            onDismissRequest = { showUrgencyMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("🔴 דחוף") },
-                                onClick = { onUrgencyChange(Urgency.RED); showUrgencyMenu = false }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("🟡 בינוני") },
-                                onClick = { onUrgencyChange(Urgency.YELLOW); showUrgencyMenu = false }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("🟢 רגיל") },
-                                onClick = { onUrgencyChange(Urgency.GREEN); showUrgencyMenu = false }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(6.dp))
-
-                // תיאור
-                Text(
-                    request.description,
-                    fontSize = 14.sp,
-                    color = Color(0xFF444444),
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                // שורה תחתונה: תאריך + כפתורים
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
                     Text(
                         dateFormat.format(Date(request.createdAt)),
                         fontSize = 11.sp,
-                        color = Color(0xFF888888)
+                        color = TextTertiary
                     )
+                }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // מחיקה
-                        IconButton(
-                            onClick = { showDeleteConfirm = true },
-                            modifier = Modifier.size(32.dp)
+                // Urgency badge (tappable)
+                Box {
+                    Surface(
+                        onClick = { showUrgencyMenu = true },
+                        color = urgencyBg,
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(
-                                Icons.Default.DeleteOutline,
-                                contentDescription = "מחק",
-                                tint = Color(0xFFBBBBBB),
-                                modifier = Modifier.size(18.dp)
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(urgencyColor)
                             )
-                        }
-
-                        // סיום טיפול
-                        Button(
-                            onClick = onDoneClick,
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text("טיפלתי", fontSize = 13.sp)
+                            Text(urgencyLabel, fontSize = 12.sp, color = urgencyColor, fontWeight = FontWeight.SemiBold)
                         }
                     }
+                    DropdownMenu(expanded = showUrgencyMenu, onDismissRequest = { showUrgencyMenu = false }) {
+                        listOf(
+                            Urgency.RED    to "🔴 דחוף",
+                            Urgency.YELLOW to "🟡 בינוני",
+                            Urgency.GREEN  to "🟢 רגיל"
+                        ).forEach { (u, label) ->
+                            DropdownMenuItem(text = { Text(label) }, onClick = {
+                                onUrgencyChange(u); showUrgencyMenu = false
+                            })
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // ── Description ───────────────────────────────────────────────
+            Text(
+                request.description,
+                fontSize = 14.sp,
+                color = TextSecondary,
+                lineHeight = 20.sp,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(Modifier.height(14.dp))
+            HorizontalDivider(color = Divider, thickness = 0.5.dp)
+            Spacer(Modifier.height(10.dp))
+
+            // ── Actions row ───────────────────────────────────────────────
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { showDeleteConfirm = true },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        Icons.Outlined.DeleteOutline,
+                        contentDescription = "מחק",
+                        tint = TextTertiary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Button(
+                    onClick = onDoneClick,
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Indigo600)
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(15.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("טיפלתי", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -326,12 +381,14 @@ fun RequestCard(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("מחיקה") },
-            text = { Text("למחוק את הבקשה של ${request.personName}?") },
+            shape = RoundedCornerShape(20.dp),
+            title = { Text("מחיקת בקשה") },
+            text  = { Text("למחוק את הבקשה של ${request.personName}?") },
             confirmButton = {
                 Button(
                     onClick = { onDeleteClick(); showDeleteConfirm = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = UrgencyRed)
+                    colors = ButtonDefaults.buttonColors(containerColor = RedStrong),
+                    shape = RoundedCornerShape(12.dp)
                 ) { Text("מחק") }
             },
             dismissButton = {
@@ -341,27 +398,87 @@ fun RequestCard(
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Empty state
+// ─────────────────────────────────────────────────────────────────────────────
 @Composable
-fun EmptyState(modifier: Modifier = Modifier) {
+private fun EmptyStateBlock() {
     Column(
-        modifier = modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 72.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("🎉", fontSize = 64.sp)
-        Spacer(Modifier.height(16.dp))
-        Text(
-            "אין בקשות פתוחות!",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "לחץ על + כדי להוסיף בקשה חדשה",
-            fontSize = 14.sp,
-            color = Color.Gray,
-            textAlign = TextAlign.Center
-        )
+        Surface(
+            shape = CircleShape,
+            color = Indigo100,
+            modifier = Modifier.size(100.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text("🎉", fontSize = 44.sp)
+            }
+        }
+        Spacer(Modifier.height(20.dp))
+        Text("אין בקשות פתוחות!", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+        Spacer(Modifier.height(6.dp))
+        Text("לחץ + כדי להוסיף בקשה חדשה", fontSize = 14.sp, color = TextTertiary, textAlign = TextAlign.Center)
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bottom navigation bar
+// ─────────────────────────────────────────────────────────────────────────────
+@Composable
+fun BottomAppBarRow(
+    onStatsClick: () -> Unit,
+    onHistoryClick: () -> Unit,
+    onAddClick: () -> Unit,
+    openCount: Int
+) {
+    Surface(
+        shadowElevation = 16.dp,
+        color = CardWhite
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .navigationBarsPadding(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Stats
+            NavItem(icon = Icons.Outlined.BarChart, label = "סטטיסטיקות", onClick = onStatsClick)
+
+            // FAB center
+            FloatingActionButton(
+                onClick = onAddClick,
+                shape = CircleShape,
+                containerColor = Indigo600,
+                contentColor = Color.White,
+                modifier = Modifier.size(58.dp),
+                elevation = FloatingActionButtonDefaults.elevation(6.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "הוסף", modifier = Modifier.size(26.dp))
+            }
+
+            // History
+            NavItem(icon = Icons.Outlined.History, label = "היסטוריה", onClick = onHistoryClick)
+        }
+    }
+}
+
+@Composable
+private fun NavItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+    ) {
+        Icon(icon, contentDescription = label, tint = TextSecondary, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.height(2.dp))
+        Text(label, fontSize = 11.sp, color = TextSecondary)
     }
 }

@@ -1,36 +1,37 @@
 package com.ozerli.app.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ozerli.app.data.Request
+import com.ozerli.app.ui.theme.*
 import com.ozerli.app.viewmodel.RequestViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HistoryScreen(
-    viewModel: RequestViewModel,
-    onBack: () -> Unit
-) {
-    val doneRequests by viewModel.doneRequests.collectAsState()
-    val dateFormat = remember { SimpleDateFormat("dd/MM/yy", Locale.getDefault()) }
+fun HistoryScreen(viewModel: RequestViewModel, onBack: () -> Unit) {
+    val done      by viewModel.doneRequests.collectAsState()
+    val dateFmt   = remember { SimpleDateFormat("dd/MM/yy", Locale.getDefault()) }
 
     Scaffold(
+        containerColor = Surface,
         topBar = {
             TopAppBar(
                 title = { Text("היסטוריה", fontWeight = FontWeight.Bold) },
@@ -39,46 +40,42 @@ fun HistoryScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "חזור")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = CardWhite)
             )
         }
-    ) { paddingValues ->
+    ) { padding ->
         CompositionLocalProvider(LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) {
-            if (doneRequests.isEmpty()) {
+            if (done.isEmpty()) {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
+                    modifier = Modifier.fillMaxSize().padding(padding),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text("📋", fontSize = 56.sp)
-                    Spacer(Modifier.height(12.dp))
-                    Text("עדיין לא טיפלת בשום בקשה", fontSize = 18.sp, color = Color.Gray)
+                    Surface(shape = CircleShape, color = GreenLight, modifier = Modifier.size(90.dp)) {
+                        Box(contentAlignment = Alignment.Center) { Text("📋", fontSize = 38.sp) }
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Text("עדיין לא טיפלת בשום בקשה", color = TextSecondary, fontSize = 16.sp)
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(paddingValues),
+                    modifier = Modifier.fillMaxSize().padding(padding),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     item {
                         Text(
-                            "✅ ${doneRequests.size} בקשות טופלו",
+                            "✅  ${done.size} בקשות טופלו",
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 16.sp
+                            color = GreenStrong,
+                            fontSize = 15.sp,
+                            modifier = Modifier.padding(bottom = 4.dp)
                         )
-                        Spacer(Modifier.height(4.dp))
                     }
-                    items(doneRequests, key = { it.id }) { request ->
-                        DoneRequestCard(
-                            request = request,
-                            dateFormat = dateFormat,
-                            onReopen = { viewModel.reopenRequest(request) },
-                            onDelete = { viewModel.deleteRequest(request) }
+                    items(done, key = { it.id }) { req ->
+                        DoneCard(req, dateFmt,
+                            onReopen = { viewModel.reopenRequest(req) },
+                            onDelete = { viewModel.deleteRequest(req) }
                         )
                     }
                 }
@@ -88,80 +85,83 @@ fun HistoryScreen(
 }
 
 @Composable
-fun DoneRequestCard(
-    request: Request,
-    dateFormat: SimpleDateFormat,
+private fun DoneCard(
+    req: Request,
+    dateFmt: SimpleDateFormat,
     onReopen: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FFF8))
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = CardWhite),
+        elevation = CardDefaults.cardElevation(1.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("✅", fontSize = 16.sp)
-                    Spacer(Modifier.width(6.dp))
-                    Text(request.personName, fontWeight = FontWeight.Bold)
-                    if (request.shiur.isNotEmpty()) {
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            "(${request.shiur})",
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
-                    }
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(GreenLight),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(req.personName.take(1), fontWeight = FontWeight.Bold, color = GreenStrong)
                 }
-                Text(
-                    request.doneAt?.let { dateFormat.format(Date(it)) } ?: "",
-                    fontSize = 11.sp,
-                    color = Color.Gray
-                )
-            }
-
-            Spacer(Modifier.height(4.dp))
-            Text(request.description, fontSize = 13.sp, color = Color(0xFF555555))
-
-            if (request.doneNote.isNotEmpty()) {
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "📝 ${request.doneNote}",
-                    fontSize = 12.sp,
-                    color = Color(0xFF388E3C),
-                    fontWeight = FontWeight.Medium
-                )
+                Spacer(Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(req.personName, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        if (req.shiur.isNotEmpty()) {
+                            Spacer(Modifier.width(5.dp))
+                            Text("(${req.shiur})", fontSize = 12.sp, color = TextTertiary)
+                        }
+                    }
+                    Text(
+                        req.doneAt?.let { "טופל ${dateFmt.format(Date(it))}" } ?: "",
+                        fontSize = 11.sp, color = GreenStrong
+                    )
+                }
+                Surface(color = GreenLight, shape = RoundedCornerShape(8.dp)) {
+                    Text("✅", modifier = Modifier.padding(6.dp), fontSize = 16.sp)
+                }
             }
 
             Spacer(Modifier.height(8.dp))
+            Text(req.description, fontSize = 13.sp, color = TextSecondary, lineHeight = 18.sp)
+
+            if (req.doneNote.isNotEmpty()) {
+                Spacer(Modifier.height(6.dp))
+                Surface(color = Indigo50, shape = RoundedCornerShape(8.dp)) {
+                    Row(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                        Text("📝  ", fontSize = 13.sp)
+                        Text(req.doneNote, fontSize = 13.sp, color = Indigo700, fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+            HorizontalDivider(color = Divider, thickness = 0.5.dp)
+            Spacer(Modifier.height(8.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TextButton(
-                    onClick = onDelete,
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFBBBBBB))
-                ) {
-                    Text("מחק", fontSize = 12.sp)
+                TextButton(onClick = onDelete, colors = ButtonDefaults.textButtonColors(contentColor = TextTertiary)) {
+                    Text("מחק", fontSize = 13.sp)
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(6.dp))
                 OutlinedButton(
                     onClick = onReopen,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Indigo500)
                 ) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
-                    )
+                    Icon(Icons.Outlined.Refresh, null, modifier = Modifier.size(15.dp), tint = Indigo600)
                     Spacer(Modifier.width(4.dp))
-                    Text("פתח מחדש", fontSize = 12.sp)
+                    Text("פתח מחדש", fontSize = 13.sp, color = Indigo600)
                 }
             }
         }

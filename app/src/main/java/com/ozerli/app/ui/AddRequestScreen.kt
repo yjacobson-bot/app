@@ -1,20 +1,27 @@
 package com.ozerli.app.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ozerli.app.data.Urgency
-import com.ozerli.app.ui.theme.UrgencyGreen
-import com.ozerli.app.ui.theme.UrgencyRed
-import com.ozerli.app.ui.theme.UrgencyYellow
+import com.ozerli.app.ui.theme.*
 import com.ozerli.app.viewmodel.RequestViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,10 +30,10 @@ fun AddRequestScreen(
     viewModel: RequestViewModel,
     onBack: () -> Unit
 ) {
-    var personName by remember { mutableStateOf("") }
-    var shiur by remember { mutableStateOf("") }
+    var personName  by remember { mutableStateOf("") }
+    var shiur       by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var urgency by remember { mutableStateOf(Urgency.YELLOW) }
+    var urgency     by remember { mutableStateOf(Urgency.YELLOW) }
     var hasReminder by remember { mutableStateOf(false) }
     var reminderDays by remember { mutableStateOf("2") }
 
@@ -37,154 +44,177 @@ fun AddRequestScreen(
         nameError = personName.isBlank()
         descError = description.isBlank()
         if (nameError || descError) return
-
         val reminderAt = if (hasReminder) {
             val days = reminderDays.toLongOrNull() ?: 2L
-            System.currentTimeMillis() + days * 24 * 60 * 60 * 1000L
+            System.currentTimeMillis() + days * 86_400_000L
         } else null
-
         viewModel.addRequest(personName, shiur, description, urgency, reminderAt)
         onBack()
     }
 
     Scaffold(
+        containerColor = Surface,
         topBar = {
-            TopAppBar(
-                title = { Text("בקשה חדשה", fontWeight = FontWeight.Bold) },
+            CenterAlignedTopAppBar(
+                title = {
+                    Text("בקשה חדשה", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "חזור")
+                        Icon(Icons.Default.Close, contentDescription = "סגור")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = CardWhite
                 )
             )
         }
-    ) { paddingValues ->
+    ) { padding ->
         CompositionLocalProvider(LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Rtl) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
 
-                // שם האדם
+                // ── Name ──────────────────────────────────────────────────
+                SectionLabel("שם האדם")
                 OutlinedTextField(
                     value = personName,
                     onValueChange = { personName = it; nameError = false },
-                    label = { Text("שם האדם *") },
-                    placeholder = { Text("יוסי כהן") },
                     modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("לדוגמה: יוסי כהן") },
                     isError = nameError,
-                    supportingText = if (nameError) ({ Text("נא להזין שם") }) else null,
-                    singleLine = true
+                    supportingText = if (nameError) ({ Text("שדה חובה") }) else null,
+                    shape = RoundedCornerShape(14.dp),
+                    singleLine = true,
+                    colors = outlinedTextFieldColors()
                 )
 
-                // שיעור (אופציונלי)
+                // ── Shiur ─────────────────────────────────────────────────
+                SectionLabel("שיעור (אופציונלי)")
                 OutlinedTextField(
                     value = shiur,
                     onValueChange = { shiur = it },
-                    label = { Text("שיעור (אופציונלי)") },
-                    placeholder = { Text("א', ב', תיכון...") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    placeholder = { Text("א', ב', ג'...") },
+                    shape = RoundedCornerShape(14.dp),
+                    singleLine = true,
+                    colors = outlinedTextFieldColors()
                 )
 
-                // תיאור הבקשה
+                // ── Description ───────────────────────────────────────────
+                SectionLabel("במה הוא צריך עזרה?")
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it; descError = false },
-                    label = { Text("מה הוא צריך? *") },
-                    placeholder = { Text("תאר את הבקשה בקצרה...") },
                     modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("תאר בקצרה מה נדרש...") },
                     isError = descError,
-                    supportingText = if (descError) ({ Text("נא להזין תיאור") }) else null,
+                    supportingText = if (descError) ({ Text("שדה חובה") }) else null,
+                    shape = RoundedCornerShape(14.dp),
                     minLines = 3,
-                    maxLines = 6
+                    maxLines = 6,
+                    colors = outlinedTextFieldColors()
                 )
 
-                // דחיפות
-                Text("דרגת דחיפות:", fontWeight = FontWeight.Medium)
+                // ── Urgency ───────────────────────────────────────────────
+                SectionLabel("דרגת דחיפות")
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    UrgencyChip(
-                        label = "🔴 דחוף",
+                    UrgencyOption(
+                        label = "דחוף",
+                        emoji = "🔴",
                         selected = urgency == Urgency.RED,
-                        color = UrgencyRed,
-                        onClick = { urgency = Urgency.RED },
-                        modifier = Modifier.weight(1f)
+                        color = RedStrong,
+                        bgColor = RedLight,
+                        modifier = Modifier.weight(1f),
+                        onClick = { urgency = Urgency.RED }
                     )
-                    UrgencyChip(
-                        label = "🟡 בינוני",
+                    UrgencyOption(
+                        label = "בינוני",
+                        emoji = "🟡",
                         selected = urgency == Urgency.YELLOW,
-                        color = UrgencyYellow,
-                        onClick = { urgency = Urgency.YELLOW },
-                        modifier = Modifier.weight(1f)
+                        color = AmberStrong,
+                        bgColor = AmberLight,
+                        modifier = Modifier.weight(1f),
+                        onClick = { urgency = Urgency.YELLOW }
                     )
-                    UrgencyChip(
-                        label = "🟢 רגיל",
+                    UrgencyOption(
+                        label = "רגיל",
+                        emoji = "🟢",
                         selected = urgency == Urgency.GREEN,
-                        color = UrgencyGreen,
-                        onClick = { urgency = Urgency.GREEN },
-                        modifier = Modifier.weight(1f)
+                        color = GreenStrong,
+                        bgColor = GreenLight,
+                        modifier = Modifier.weight(1f),
+                        onClick = { urgency = Urgency.GREEN }
                     )
                 }
 
-                // תזכורת
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                // ── Reminder ──────────────────────────────────────────────
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Indigo50,
+                    border = BorderStroke(1.dp, if (hasReminder) Indigo500 else Divider)
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("🔔 הגדר תזכורת", fontWeight = FontWeight.Medium)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🔔", fontSize = 18.sp)
+                                Spacer(Modifier.width(8.dp))
+                                Column {
+                                    Text("תזכורת", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                                    Text("הזכר לי לחזור לענין הזה", fontSize = 12.sp, color = TextSecondary)
+                                }
+                            }
                             Switch(
                                 checked = hasReminder,
-                                onCheckedChange = { hasReminder = it }
+                                onCheckedChange = { hasReminder = it },
+                                colors = SwitchDefaults.colors(checkedThumbColor = Indigo600, checkedTrackColor = Indigo100)
                             )
                         }
-
                         if (hasReminder) {
-                            Spacer(Modifier.height(8.dp))
+                            Spacer(Modifier.height(12.dp))
+                            HorizontalDivider(color = Divider)
+                            Spacer(Modifier.height(12.dp))
                             Row(
-                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Text("תזכיר לי אחרי")
+                                Text("תזכיר לי אחרי", color = TextSecondary, fontSize = 14.sp)
                                 OutlinedTextField(
                                     value = reminderDays,
                                     onValueChange = { reminderDays = it },
-                                    modifier = Modifier.width(70.dp),
-                                    singleLine = true
+                                    modifier = Modifier.width(72.dp),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = outlinedTextFieldColors()
                                 )
-                                Text("ימים")
+                                Text("ימים", color = TextSecondary, fontSize = 14.sp)
                             }
                         }
                     }
                 }
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(4.dp))
 
-                // כפתור שמירה
+                // ── Save button ───────────────────────────────────────────
                 Button(
                     onClick = ::save,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Indigo600)
                 ) {
-                    Text("הוסף בקשה ✓", style = MaterialTheme.typography.titleMedium)
+                    Text("הוסף בקשה", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -192,32 +222,59 @@ fun AddRequestScreen(
 }
 
 @Composable
-fun UrgencyChip(
+private fun SectionLabel(text: String) {
+    Text(
+        text,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = TextSecondary,
+        letterSpacing = 0.3.sp
+    )
+}
+
+@Composable
+private fun UrgencyOption(
     label: String,
+    emoji: String,
     selected: Boolean,
     color: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    bgColor: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
 ) {
     Surface(
         onClick = onClick,
         modifier = modifier,
-        shape = MaterialTheme.shapes.medium,
-        color = if (selected) color.copy(alpha = 0.15f) else Color(0xFFF5F5F5),
-        border = if (selected)
-            androidx.compose.foundation.BorderStroke(2.dp, color)
-        else
-            androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDDDDDD))
-    ) {
-        Text(
-            label,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 10.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            color = if (selected) color else Color.Gray,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            fontSize = MaterialTheme.typography.bodySmall.fontSize
+        shape = RoundedCornerShape(14.dp),
+        color = if (selected) bgColor else CardWhite,
+        border = BorderStroke(
+            width = if (selected) 2.dp else 1.dp,
+            color = if (selected) color else Divider
         )
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(emoji, fontSize = 20.sp)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                label,
+                fontSize = 13.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                color = if (selected) color else TextSecondary,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
+
+@Composable
+private fun outlinedTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor   = Indigo500,
+    unfocusedBorderColor = Divider,
+    focusedLabelColor    = Indigo500
+)
+
+private fun BorderStroke(width: androidx.compose.ui.unit.Dp, color: Color) =
+    androidx.compose.foundation.BorderStroke(width, color)
