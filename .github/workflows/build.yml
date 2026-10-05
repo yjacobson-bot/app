@@ -38,19 +38,16 @@ jobs:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
         continue-on-error: true
 
-      - name: Post errors as commit comment
+      - name: Commit errors for inspection
         if: steps.build.outcome == 'failure'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ERRORS=$(grep -E "^e:.*error:|error:.*unresolved|error:.*not found|error:.*cannot|FAILED|Execution failed" build.log | head -30 || echo "No specific errors found")
-          LAST_LINES=$(tail -50 build.log)
-          BODY="## ❌ Build failed\n\n\`\`\`\n${ERRORS}\n\`\`\`\n\n### Last 50 lines:\n\`\`\`\n${LAST_LINES}\n\`\`\`"
-          curl -s -X POST \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Content-Type: application/json" \
-            "https://api.github.com/repos/yjacobson-bot/app/commits/${{ github.sha }}/comments" \
-            -d "{\"body\": $(echo "$BODY" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')}"
+          mkdir -p ci-debug
+          { grep -E "error:|FAILED|unresolved|Cannot|cannot" build.log | head -40; echo "===TAIL==="; tail -50 build.log; } > ci-debug/errors.txt
+          git config user.email "ci@github.com"
+          git config user.name "GitHub Actions CI"
+          git add ci-debug/errors.txt
+          git diff --cached --quiet || git commit -m "ci: save build errors [skip ci]"
+          git push origin HEAD:main
           exit 1
 
       - name: Upload APK artifact
